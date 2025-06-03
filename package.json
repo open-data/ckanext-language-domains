@@ -1,0 +1,21 @@
+{
+  "name": "ckanext-language-domains",
+  "version": "1.0.0",
+  "description": "CKAN plugin to allow for different domains per language. ",
+  "dependencies": {},
+  "devDependencies": {
+    "pyright": "1.1.386"
+  },
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JVickery-TBS/ckanext-language-domains.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/JVickery-TBS/ckanext-language-domains/issues"
+  },
+  "homepage": "https://github.com/JVickery-TBS/ckanext-language-domains#readme"
+}
