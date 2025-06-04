@@ -3,7 +3,7 @@ groups:
   - annotation: ckanext-language-domains settings
     options:
       - key: ckanext.language_domains.domain_map
-        example: {"en": "example.com", "fr": "exemple.com"}
+        example: {"en": ["example.com"], "fr": ["exemple.com"]}
         description: |
-          Dictionary of language locales to domains
+          Dictionary of language locales to domain list
         required: true
