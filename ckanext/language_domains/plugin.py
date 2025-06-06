@@ -3,14 +3,15 @@ import json
 from urllib.parse import urlsplit
 
 from typing import Any, Optional, List, Tuple, Callable, Dict
+from flask import Blueprint
 from ckan.types import CKANApp
-from ckan.common import CKANConfig, current_user
+from ckan.common import CKANConfig
 
 import ckan.plugins as plugins
 import ckan.lib.helpers as core_helpers
-from ckan.plugins.toolkit import request
 
 from ckanext.language_domains import helpers
+from ckanext.language_domains.blueprint import language_domain_views
 
 
 log = getLogger(__name__)
@@ -21,7 +22,7 @@ class LanguageDomainsPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IMiddleware, inherit=True)
     plugins.implements(plugins.IConfigurer)
     plugins.implements(plugins.ITemplateHelpers)
-    plugins.implements(plugins.IAuthenticator, inherit=True)
+    plugins.implements(plugins.IBlueprint)
 
     # IMiddleware
     def make_middleware(self, app: CKANApp, config: 'CKANConfig') -> CKANApp:
@@ -33,25 +34,17 @@ class LanguageDomainsPlugin(plugins.SingletonPlugin):
         core_helpers.redirect_to = helpers.redirect_to
         core_helpers.get_site_protocol_and_host = helpers.get_site_protocol_and_host
 
+        plugins.toolkit.add_template_directory(config, 'templates')
+        plugins.toolkit.add_resource('assets', 'language_domain_assets')
+
     # ITemplateHelpers
     def get_helpers(self) -> Dict[str, Callable[..., Any]]:
         return {'redirect_to': helpers.redirect_to,
                 'get_site_protocol_and_host': helpers.get_site_protocol_and_host}
 
-    # IAuthenticator
-    def identify(self):
-        # TODO: read other domain cookies to get sessions??
-        if 'links' in request.url:
-            log.info('    ')
-            log.info('DEBUGGING::')
-            log.info('    ')
-            log.info(request)
-            log.info('    ')
-            log.info(request.environ)
-            log.info('    ')
-            log.info(current_user)
-            log.info('    ')
-        return
+    # IBlueprint
+    def get_blueprint(self) -> List[Blueprint]:
+        return [language_domain_views]
 
 
 class LanguageDomainMiddleware(object):
@@ -75,8 +68,6 @@ class LanguageDomainMiddleware(object):
         current_lang = environ['CKAN_LANG']
         current_uri = str(environ['REQUEST_URI'])
         correct_lang_domain = self.default_domain
-        # TODO: set environ['SESSION_COOKIE_DOMAIN'] ??
-        # TODO: OR pass over environ['HTTP_COOKIE'] ??
         for lang_code, lang_domains in self.language_domains.items():
             # TODO: figure out lang_domains[0] from current subdomain or not??
             if current_domain in lang_domains and lang_code != current_lang:
@@ -87,15 +78,16 @@ class LanguageDomainMiddleware(object):
               environ['HTTP_HOST'] not in lang_domains):
                 # lang code is correct but domain isn't, set correct domain
                 correct_lang_domain = environ['HTTP_HOST'] = lang_domains[0]
-            if current_uri.startswith(f'/{lang_code}'):
+            if current_uri.startswith(f'/{lang_code}/') or \
+              current_uri == f'/{lang_code}':
                 # a user has navigated to a lang sub dir, move 'em to the domain
                 correct_lang_domain = lang_domains[0]
                 # get rid of lang code
                 environ['REQUEST_URI'] = current_uri = current_uri[
                     len(f'/{current_lang}'):]
-                extra_response_headers = [('Location', self.domain_scheme + '://' +
-                                                       correct_lang_domain +
-                                                       current_uri)]
+                extra_response_headers = [(
+                    'Location',
+                    f'{self.domain_scheme}://{correct_lang_domain}{current_uri}')]
 
         def _start_response(status: str,
                             response_headers: List[Tuple[str, str]],

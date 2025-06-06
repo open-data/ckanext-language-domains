@@ -1,4 +1,3 @@
-from logging import getLogger
 from flask import redirect as _flask_redirect
 from urllib.parse import urlsplit
 import json
@@ -7,9 +6,6 @@ from typing import Any, cast, Union, Tuple
 from ckan.types import Response
 
 from ckan.plugins.toolkit import h, config, request
-
-
-log = getLogger(__name__)
 
 
 def _get_correct_language_domain() -> Tuple[str, str]:
@@ -63,7 +59,7 @@ def redirect_to(*args: Any, **kw: Any) -> Response:
         if _url.startswith(f'/{current_lang}/'):
             _url = _url[len(f'/{current_lang}'):]
         _schema, _host = _get_correct_language_domain()
-        _url = str(_schema + '://' + _host + _url)
+        _url = str(f'{_schema}://{_host}{_url}')
 
     return cast(Response, _flask_redirect(_url))
 

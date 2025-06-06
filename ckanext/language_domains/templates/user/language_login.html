@@ -1,0 +1,23 @@
+{% extends 'page.html' %}
+
+{% block subtitle %}{{ _('Logging you in across domains...') }}{% endblock %}
+
+{% block primary_content %}
+  {# TODO: add iframes per domain... #}
+  {%- for lang_code, lang_domains in language_domains.items() -%}
+    {%- if lang_code != h.lang() -%}
+      {# TODO: figure out lang_domains[0] from current subdomain or not?? #}
+      <iframe src="{{- domain_scheme -}}://{{- lang_domains[0] -}}/user/login"></iframe>
+    {%- endif -%}
+  {%- endfor -%}
+{% endblock %}
+
+{%- block styles %}
+  {{ super() }}
+  {% asset 'language_domain_assets/css' %}
+{% endblock %}
+
+{%- block scripts %}
+  {{ super() }}
+  {% asset 'language_domain_assets/js' %}
+{% endblock -%}

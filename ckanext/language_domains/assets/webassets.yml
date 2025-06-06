@@ -1,0 +1,12 @@
+css:
+  contents:
+    - styles/language_domains.css
+  output: language_domains/%(version)s_language_domains.css
+
+js:
+  contents:
+    - scripts/language_domains.js
+  extra:
+    preload:
+      - base/main  # need ckan JS and jQuery
+  output: language_domains/%(version)s_language_domains.js
