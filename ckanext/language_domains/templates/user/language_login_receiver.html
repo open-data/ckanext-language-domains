@@ -1,0 +1,18 @@
+{% extends 'page.html' %}
+
+{% block subtitle %}{{ _('Logging you in across domains...') }}{% endblock %}
+
+{% block primary_content %}{% endblock %}
+
+{%- block styles %}
+  {{ super() }}
+  {% asset 'language_domain_assets/css' %}
+{% endblock %}
+
+{%- block scripts %}
+  {{ super() }}
+  <script>
+    const TRUSTED_LANG_DOMAINS = {{- trusted_domains|tojson -}};
+  </script>
+  {% asset 'language_domain_assets/js_login_receiver' %}
+{% endblock -%}

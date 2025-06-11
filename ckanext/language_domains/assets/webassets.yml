@@ -3,10 +3,18 @@ css:
     - styles/language_domains.css
   output: language_domains/%(version)s_language_domains.css
 
-js:
+js_login_sender:
   contents:
-    - scripts/language_domains.js
+    - scripts/language_login_sender.js
   extra:
     preload:
       - base/main  # need ckan JS and jQuery
-  output: language_domains/%(version)s_language_domains.js
+  output: language_domains/%(version)s_language_login_sender.js
+
+js_login_receiver:
+  contents:
+    - scripts/language_login_receiver.js
+  extra:
+    preload:
+      - base/main  # need ckan JS and jQuery
+  output: language_domains/%(version)s_language_login_receiver.js

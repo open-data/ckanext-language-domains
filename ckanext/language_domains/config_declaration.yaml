@@ -7,3 +7,8 @@ groups:
         description: |
           Dictionary of language locales to domain list
         required: true
+      - key: ckanext.language_domains.secret
+        example: 'thisisalegitsecret'
+        description: |
+          Secret key for JWT encoding.
+        required: true

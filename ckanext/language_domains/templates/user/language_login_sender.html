@@ -1,0 +1,24 @@
+{% extends 'page.html' %}
+
+{% block subtitle %}{{ _('Logging you in across domains...') }}{% endblock %}
+
+{% block primary_content %}
+  {# TODO: add copy about allowing popups to be able to login across domains... #}
+{% endblock %}
+
+{%- block styles %}
+  {{ super() }}
+  {% asset 'language_domain_assets/css' %}
+{% endblock %}
+
+{%- block scripts %}
+  {{ super() }}
+  <script>
+    const SESSION_USER = '{{- g.user -}}';
+    const SESSION_TOKEN = '{{- token -}}';
+    const DOMAIN_SCHEME = '{{- domain_scheme -}}';
+    const REQUESTER_DOMAIN = '{{- requester_domain -}}';
+    const LANGUAGE_DOMAINS = {{- language_domains|tojson -}};
+  </script>
+  {% asset 'language_domain_assets/js_login_sender' %}
+{% endblock -%}
