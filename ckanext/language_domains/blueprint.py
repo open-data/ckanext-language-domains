@@ -32,8 +32,13 @@ def language_domain_login_master():
     else:
         language_domains = json.loads(language_domains)
 
-    # TODO: figure out lang_domains[0] from current subdomain or not??
-    requester_domain = language_domains.pop(h.lang())[0]
+    trusted_domains = []
+    if language_domains:
+        for _lang_code, lang_domains in language_domains.items():
+            # TODO: figure out lang_domains[0] from current subdomain or not??
+            trusted_domains.append(f'{domain_scheme}://{lang_domains[0]}')
+
+    del language_domains[h.lang()]
 
     jwt_secret = config.get('ckanext.language_domains.secret')
     token = None
@@ -49,7 +54,7 @@ def language_domain_login_master():
     return render('user/language_login_sender.html',
                   {'language_domains': language_domains,
                    'domain_scheme': domain_scheme,
-                   'requester_domain': requester_domain,
+                   'trusted_domains': trusted_domains,
                    'token': token})
 
 

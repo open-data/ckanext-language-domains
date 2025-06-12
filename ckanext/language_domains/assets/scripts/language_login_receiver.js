@@ -6,6 +6,11 @@ window.addEventListener('message', function(_event){
     return;
   }
 
+  if( typeof _event.data.login_receiver_ready != 'undefined' ){
+    _event.source.postMessage({'login_receiver_ready': true}, _event.origin);
+    return;
+  }
+
   if( ! _event.data.session_user || ! _event.data.session_token || ! _event.data.target_domain || ! _event.data.target_language ){
     return;
   }
@@ -18,12 +23,12 @@ window.addEventListener('message', function(_event){
     'complete': function(_data){
       if( _data.responseJSON ){  // we have response JSON
         if( _data.responseJSON.success ){  // successful format guess
-          console.log(_data.responseJSON);
+          _event.source.postMessage({'login_successful': true}, _event.origin);
         }else{  // validation error
-          console.log(_data);
+          _event.source.postMessage({'login_successful': false}, _event.origin);
         }
       }else{  // fully flopped ajax request
-        console.log(_data);
+        _event.source.postMessage({'login_successful': false}, _event.origin);
       }
     }
   });

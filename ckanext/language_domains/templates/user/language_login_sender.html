@@ -17,7 +17,7 @@
     const SESSION_USER = '{{- g.user -}}';
     const SESSION_TOKEN = '{{- token -}}';
     const DOMAIN_SCHEME = '{{- domain_scheme -}}';
-    const REQUESTER_DOMAIN = '{{- requester_domain -}}';
+    const TRUSTED_LANG_DOMAINS = {{- trusted_domains|tojson -}};
     const LANGUAGE_DOMAINS = {{- language_domains|tojson -}};
   </script>
   {% asset 'language_domain_assets/js_login_sender' %}

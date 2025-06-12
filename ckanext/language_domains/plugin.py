@@ -24,6 +24,8 @@ class LanguageDomainsPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.ITemplateHelpers)
     plugins.implements(plugins.IBlueprint)
 
+    # TODO: hardcode in the login redirect and logout redirect
+
     # IMiddleware
     def make_middleware(self, app: CKANApp, config: 'CKANConfig') -> CKANApp:
         return LanguageDomainMiddleware(app, config)
