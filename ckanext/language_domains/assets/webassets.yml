@@ -18,3 +18,19 @@ js_login_receiver:
     preload:
       - base/main  # need ckan JS and jQuery
   output: language_domains/%(version)s_language_login_receiver.js
+
+js_logout_sender:
+  contents:
+    - scripts/language_logout_sender.js
+  extra:
+    preload:
+      - base/main  # need ckan JS and jQuery
+  output: language_domains/%(version)s_language_logout_sender.js
+
+js_logout_receiver:
+  contents:
+    - scripts/language_logout_receiver.js
+  extra:
+    preload:
+      - base/main  # need ckan JS and jQuery
+  output: language_domains/%(version)s_language_logout_receiver.js

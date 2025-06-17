@@ -1,6 +1,6 @@
 {% extends 'page.html' %}
 
-{% block subtitle %}{{ _('Logging you in across domains...') }}{% endblock %}
+{% block subtitle %}{{ _('Logging you out of all domains...') }}{% endblock %}
 
 {% block primary_content %}
   {# TODO: add copy about allowing popups to be able to login across domains... #}
@@ -19,7 +19,7 @@
     const DOMAIN_SCHEME = '{{- domain_scheme -}}';
     const TRUSTED_LANG_DOMAINS = {{- trusted_domains|tojson -}};
     const LANGUAGE_DOMAINS = {{- language_domains|tojson -}};
-    const LOGIN_REDIRECT = '{{- redirect -}}';
+    const LOGOUT_REDIRECT = '{{- redirect -}}';
   </script>
-  {% asset 'language_domain_assets/js_login_sender' %}
+  {% asset 'language_domain_assets/js_logout_sender' %}
 {% endblock -%}

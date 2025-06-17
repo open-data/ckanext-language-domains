@@ -2,10 +2,18 @@ from flask import redirect as _flask_redirect
 from urllib.parse import urlsplit
 import json
 
-from typing import Any, cast, Union, Tuple
+from typing import Any, cast, Union, Tuple, Dict
 from ckan.types import Response
 
 from ckan.plugins.toolkit import h, config, request
+
+
+def _get_domain_index(current_domain: str, language_domains: Dict[str, str]) -> int:
+    for _lang_code, lang_domains in language_domains.items():
+        for index, domain in enumerate(lang_domains):
+            if current_domain == domain:
+                return index
+    return 0
 
 
 def _get_correct_language_domain() -> Tuple[str, str]:
@@ -28,10 +36,10 @@ def _get_correct_language_domain() -> Tuple[str, str]:
         language_domains = json.loads(language_domains)
     current_lang = h.lang()
     correct_lang_domain = current_domain
+    domain_index_match = _get_domain_index(current_domain, language_domains)
     for lang_code, lang_domains in language_domains.items():
-        # TODO: figure out lang_domains[0] from current subdomain or not??
         if lang_code == current_lang and current_domain not in lang_domains:
-            correct_lang_domain = lang_domains[0]
+            correct_lang_domain = lang_domains[domain_index_match]
     return (default_scheme, correct_lang_domain)
 
 
@@ -54,14 +62,23 @@ def redirect_to(*args: Any, **kw: Any) -> Response:
     if skip_url_parsing is False:
         _url = h.url_for(*uargs, **kw)
 
+    status_code = 302
+
     if _url.startswith('/'):
         current_lang = h.lang()
         if _url.startswith(f'/{current_lang}/'):
+            status_code = 301
             _url = _url[len(f'/{current_lang}'):]
-        _schema, _host = _get_correct_language_domain()
-        _url = str(f'{_schema}://{_host}{_url}')
+        root_path = config.get('ckan.root_path', '')
+        if root_path is None:
+            root_path = ''
+        root_path = root_path.replace('/{{LANG}}', '')
+        if not _url.startswith(root_path):
+            _url = root_path + _url
+        _scheme, _host = _get_correct_language_domain()
+        _url = str(f'{_scheme}://{_host}{_url}')
 
-    return cast(Response, _flask_redirect(_url))
+    return cast(Response, _flask_redirect(_url, code=status_code))
 
 
 def get_site_protocol_and_host() -> Union[Tuple[str, str], Tuple[None, None]]:

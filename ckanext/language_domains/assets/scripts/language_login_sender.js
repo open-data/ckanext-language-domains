@@ -7,13 +7,14 @@ window.addEventListener('load', function(){
     const trusted_domains = TRUSTED_LANG_DOMAINS || [];
     const domain_scheme = DOMAIN_SCHEME || null;
     const language_domains = LANGUAGE_DOMAINS || {};
+    const login_redirect = LOGIN_REDIRECT || '/';
 
     if( session_user == null || session_token == null ){
       return;
     }
 
     // TODO: improve check for all domains being logged in?? fallback to tries/time??
-    let _index = 0;
+    let _index = 1;
     const _max = Object.keys(language_domains).length;
 
     for( let [_lang, _lang_domains] of Object.entries(language_domains) ){
@@ -53,10 +54,14 @@ window.addEventListener('load', function(){
           return;
         }
 
-        if( _event.data.login_successful ){
+        console.log(_event.data);
+
+        if( typeof _event.data.login_successful != 'undefined' ){
           loginWindow.close();
           if( _index >= _max ){
-            window.location.assign('/');
+            setTimeout(function(){
+              window.location.assign(login_redirect);
+            }, 250);
           }
           _index++;
         }

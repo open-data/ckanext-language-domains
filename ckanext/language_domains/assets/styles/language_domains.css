@@ -1,7 +1,14 @@
-body iframe.language-domains-entry{
+body header > div.app-bar *,
+body header > div.app-bar-mb *,
+body header > nav.wb-menu{
   pointer-events: none !important;
   display: none !important;
   visibility: hidden !important;
   height: 0 !important;
   width: 0 !important;
+}
+
+body header > div.app-bar,
+body header > div.app-bar-mb{
+  padding: 1px !important;
 }
