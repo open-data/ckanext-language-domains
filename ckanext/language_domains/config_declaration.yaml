@@ -7,6 +7,11 @@ groups:
         description: |
           Dictionary of language locales to domain list
         required: true
+      - key: ckanext.language_domains.root_paths
+        example: {"example.com": "/data", "exemple.com": "/data"}
+        description: |
+          Dictionary of domains and their CKAN root_paths
+        required: false
       - key: ckanext.language_domains.secret
         example: 'thisisalegitsecret'
         description: |
