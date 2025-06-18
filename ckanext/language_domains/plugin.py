@@ -34,6 +34,7 @@ class LanguageDomainsPlugin(plugins.SingletonPlugin):
         # NOTE: monkey patch these core helpers as the other helpers call them directly
         core_helpers.redirect_to = helpers.redirect_to
         core_helpers.get_site_protocol_and_host = helpers.get_site_protocol_and_host
+        core_helpers._local_url = helpers.local_url
 
         plugins.toolkit.add_template_directory(config, 'templates')
         plugins.toolkit.add_resource('assets', 'language_domain_assets')
@@ -107,10 +108,11 @@ class LanguageDomainMiddleware(object):
         uri_parts = urlsplit(default_domain)
         self.default_domain = uri_parts.netloc
         self.domain_scheme = uri_parts.scheme
-        root_path = config.get('ckan.root_path', '')
-        if root_path is None:
-            root_path = ''
-        self.root_path = root_path.replace('/{{LANG}}', '')
+        root_paths = config.get('ckanext.language_domains.root_paths', '')
+        if not root_paths:
+            self.root_paths = {}
+        else:
+            self.root_paths = json.loads(root_paths)
 
     def __call__(self, environ: Any, start_response: Any) -> Any:
         extra_response_headers = []
@@ -139,7 +141,9 @@ class LanguageDomainMiddleware(object):
                 # a user has navigated to a lang sub dir, move 'em to the domain
                 correct_lang_domain = lang_domains[domain_index_match]
                 # get rid of lang code
-                environ['REQUEST_URI'] = current_uri = self.root_path + current_uri[
+                root_path = self.root_paths.get(correct_lang_domain, '').rstrip('/')
+                root_path.replace('/{{LANG}}', '')
+                environ['REQUEST_URI'] = current_uri = root_path + current_uri[
                     len(f'/{current_lang}'):]
                 extra_response_headers = [(
                     'Location',

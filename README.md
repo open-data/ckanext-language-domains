@@ -4,7 +4,7 @@
 
 This plugin hooks into various parts of the CKAN framework to allow for vanity language domains. It forces CKAN to no longer use language sub-directories, redirecting requested sub-directories to their mapped domain name.
 
-It is not required to use different languages with this plugin, you could use it to have multiple vanity domains for your CKAN install. This plugin supports `ckan.root_path` as well.
+It is not required to use different languages with this plugin, you could use it to have multiple vanity domains for your CKAN install. This plugin supports `ckan.root_path` as well with a config option `ckanext.language_domains.root_paths`.
 
 ## Requirements
 
@@ -63,3 +63,10 @@ To install ckanext-language-domains:
       "fr": ["exemple.com", "exempledeux.ca"]}
 
   The plugin will redirect requests based on the requested domain and the order in the mapped lists. E.g. from the example above, if a user requested `https://example2.ca/fr/page` they would be redirected to `https://exempledeux.ca/page`
+
+**ckanext.language_domains.root_paths** specifies a mapping of domains and their root paths:
+
+  # (optional, default: None).
+	ckanext.language_domains.root_paths = {
+      "example.com": "/data/{{LANG}}",
+      "exemple.com": "/data/{{LANG}}"}
