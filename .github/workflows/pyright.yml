@@ -41,5 +41,6 @@ jobs:
       - name: Check types
         if: steps.pydepends.outcome == 'success'
         run: |
+          source /home/runner/work/app/bin/activate
           cd /home/runner/work/app/src/ckanext-language-domains
           npx pyright
