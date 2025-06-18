@@ -1,4 +1,4 @@
-[![Tests](https://github.com/JVickery-TBS/ckanext-language-domains/workflows/Tests/badge.svg?branch=main)](https://github.com/JVickery-TBS/ckanext-language-domains/actions)
+[![Tests](https://github.com/open-data/ckanext-language-domains/workflows/Tests/badge.svg?branch=main)](https://github.com/open-data/ckanext-language-domains/actions)
 
 # CKANEXT Language Domains
 

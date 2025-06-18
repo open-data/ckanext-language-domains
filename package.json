@@ -9,13 +9,13 @@
   "scripts": {},
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/JVickery-TBS/ckanext-language-domains.git"
+    "url": "git+https://github.com/open-data/ckanext-language-domains.git"
   },
   "keywords": [],
   "author": "",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/JVickery-TBS/ckanext-language-domains/issues"
+    "url": "https://github.com/open-data/ckanext-language-domains/issues"
   },
-  "homepage": "https://github.com/JVickery-TBS/ckanext-language-domains#readme"
+  "homepage": "https://github.com/open-data/ckanext-language-domains#readme"
 }
