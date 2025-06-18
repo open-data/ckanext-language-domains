@@ -38,8 +38,7 @@ def forced_came_from(_func: Callable[..., Any]) -> Callable[..., Any]:
         http_args['_came_from'] = http_args.pop(
             'next', http_args.pop('came_from', ''))
 
-        # type_ignore_reason: incomplete typing
-        request.args = ImmutableMultiDict(http_args)  # type: ignore
+        request.args = ImmutableMultiDict(http_args)
 
         return _func(*args, **kwargs)
     return _decorator_function
