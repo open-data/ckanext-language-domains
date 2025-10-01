@@ -18,9 +18,10 @@ from ckan.plugins.toolkit import h, config, request
 
 def _get_domain_index(current_domain: str, language_domains: Dict[str, str]) -> int:
     for _lang_code, lang_domains in language_domains.items():
-        for index, domain in enumerate(lang_domains):
-            if current_domain == domain:
-                return index
+        try:
+            return lang_domains.index(current_domain)
+        except ValueError:
+            return 0
     return 0
 
 
@@ -152,8 +153,8 @@ def local_url(url_to_amend: str, **kw: Any):
         root_paths = json.loads(root_paths)
     root_path = root_paths.get(host, '').rstrip('/')
     if root_path:
-        # FIXME this can be written better once the merge
-        # into the ecportal core is done - Toby
+        # FIXME this can be written better once
+        # the merge into the portal core is done
         # we have a special root specified so use that
         if default_locale:
             root_path = re.sub('/{{LANG}}', '', root_path)

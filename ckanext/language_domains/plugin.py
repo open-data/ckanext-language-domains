@@ -23,7 +23,6 @@ class LanguageDomainsPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IConfigurer)
     plugins.implements(plugins.ITemplateHelpers)
     plugins.implements(plugins.IBlueprint)
-    plugins.implements(plugins.IResourceController, inherit=True)
 
     # IMiddleware
     def make_middleware(self, app: CKANApp, config: 'CKANConfig') -> CKANApp:
@@ -49,51 +48,6 @@ class LanguageDomainsPlugin(plugins.SingletonPlugin):
     # IBlueprint
     def get_blueprint(self) -> List[Blueprint]:
         return [language_domain_views]
-
-    # IResourceController
-    def before_resource_show(self, resource_dict: Dict[str, Any]) -> Dict[str, Any]:
-        # FIXME: is there a better way to store res_url in SOLR to prevent this
-        #        for everytime a Resource is shown???
-        language_domains = plugins.toolkit.config.get(
-            'ckanext.language_domains.domain_map', '')
-        if not language_domains:
-            language_domains = {}
-        else:
-            language_domains = json.loads(language_domains)
-
-        try:
-            current_language = plugins.toolkit.h.lang()
-            current_domain = plugins.toolkit.request.url
-            uri_parts = urlsplit(current_domain)
-            current_domain = uri_parts.netloc
-            _scheme, _host = helpers._get_correct_language_domain()
-        except RuntimeError:
-            current_language = 'en'
-            default_domain = plugins.toolkit.config.get('ckan.site_url', '')
-            uri_parts = urlsplit(default_domain)
-            current_domain = _host = uri_parts.netloc
-            _scheme = uri_parts.scheme
-
-        domain_index_match = helpers._get_domain_index(
-            current_domain, language_domains)
-
-        for lang_code, lang_domains in language_domains.items():
-            if (
-              resource_dict.get('url', '').startswith(
-                  f'{_scheme}://{lang_domains[domain_index_match]}') and
-              _host != lang_domains[domain_index_match]
-            ):
-                uri_parts = urlsplit(resource_dict['url'])
-                path = str(uri_parts.path)
-                if path.startswith(f'/{lang_code}/'):
-                    path = path[len(f'/{lang_code}'):]
-                elif path.startswith(f'/{current_language}/'):
-                    path = path[len(f'/{current_language}'):]
-                resource_dict['url'] = uri_parts._replace(
-                    netloc=_host, path=path).geturl()
-                break
-
-        return resource_dict
 
 
 class LanguageDomainMiddleware(object):
