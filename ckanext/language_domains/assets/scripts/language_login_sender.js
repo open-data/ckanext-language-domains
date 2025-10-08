@@ -54,10 +54,9 @@ window.addEventListener('load', function(){
           return;
         }
 
-        console.log(_event.data);
-
         if( typeof _event.data.login_successful != 'undefined' ){
           loginWindow.close();
+          console.log('Logged into ' + _event.origin + ' - ' + _event.data.login_successful);
           if( _index >= _max ){
             setTimeout(function(){
               window.location.assign(login_redirect);

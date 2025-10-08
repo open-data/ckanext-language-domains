@@ -85,6 +85,8 @@ def login_master():
     if jwt_secret:
         token_data = {
             'user_id': g.userobj.id,
+            'user_agent': request.environ['HTTP_USER_AGENT'],
+            'user_addr': request.remote_addr,
             'exp': datetime.datetime.now(datetime.timezone.utc) +
             datetime.timedelta(minutes=10),
             "iat": datetime.datetime.now(datetime.timezone.utc)
@@ -177,9 +179,14 @@ def login():
 
         userobj = User.get(token_data.get('user_id'))
 
-        if not userobj or userobj.name != post_data['session_user']:
-            return _finish(404,
-                           {'error': _('User not found'),
+        if (
+          not userobj or
+          userobj.name != post_data['session_user'] or
+          token_data.get('user_agent') != request.environ['HTTP_USER_AGENT'] or
+          token_data.get('user_addr') != request.remote_addr
+        ):
+            return _finish(400,
+                           {'error': _('Unable to verify login session'),
                             'success': False},
                            content_type='json')
 
@@ -232,6 +239,8 @@ def logout_master():
         if jwt_secret:
             token_data = {
                 'user_id': g.userobj.id,
+                'user_agent': request.environ['HTTP_USER_AGENT'],
+                'user_addr': request.remote_addr,
                 'exp': datetime.datetime.now(datetime.timezone.utc) +
                 datetime.timedelta(minutes=10),
                 "iat": datetime.datetime.now(datetime.timezone.utc)
@@ -279,9 +288,16 @@ def logout_master():
 
     userobj = User.get(token_data.get('user_id'))
 
-    if not userobj or userobj.name != post_data['session_user']:
-        return _finish(404, {'error': _('User not found'),
-                             'success': False}, content_type='json')
+    if (
+        not userobj or
+        userobj.name != post_data['session_user'] or
+        token_data.get('user_agent') != request.environ['HTTP_USER_AGENT'] or
+        token_data.get('user_addr') != request.remote_addr
+    ):
+        return _finish(400,
+                       {'error': _('Unable to verify login session'),
+                        'success': False},
+                       content_type='json')
 
     g.user = None
     g.userobj = None
@@ -360,9 +376,16 @@ def logout():
 
     userobj = User.get(token_data.get('user_id'))
 
-    if not userobj or userobj.name != post_data['session_user']:
-        return _finish(404, {'error': _('User not found'),
-                             'success': False}, content_type='json')
+    if (
+        not userobj or
+        userobj.name != post_data['session_user'] or
+        token_data.get('user_agent') != request.environ['HTTP_USER_AGENT'] or
+        token_data.get('user_addr') != request.remote_addr
+    ):
+        return _finish(400,
+                       {'error': _('Unable to verify login session'),
+                        'success': False},
+                       content_type='json')
 
     g.user = None
     g.userobj = None

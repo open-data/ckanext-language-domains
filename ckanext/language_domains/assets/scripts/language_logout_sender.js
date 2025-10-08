@@ -56,6 +56,7 @@ window.addEventListener('load', function(){
 
         if( typeof _event.data.logout_successful != 'undefined' ){
           logoutWindow.close();
+          console.log('Logged out of ' + _event.origin + ' - ' + _event.data.logout_successful);
           if( _index >= _max ){
             let tokenFieldName = $('meta[name="csrf_field_name"]').attr('content');
             let tokenValue = $('meta[name="' + tokenFieldName + '"]').attr('content');
