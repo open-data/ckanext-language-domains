@@ -99,6 +99,9 @@ class LanguageDomainMiddleware(object):
                 root_path.replace('/{{LANG}}', '')
                 environ['REQUEST_URI'] = current_uri = root_path + current_uri[
                     len(f'/{current_lang}'):]
+                if environ['REQUEST_METHOD'] == 'POST':
+                    # NOTE: cannot re-POST data from Location header redirects
+                    continue
                 extra_response_headers = [(
                     'Location',
                     f'{self.domain_scheme}://{correct_lang_domain}{current_uri}')]
