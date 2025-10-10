@@ -1,16 +1,15 @@
 from logging import getLogger
-import json
 from urllib.parse import urlsplit
 
 from typing import Any, Optional, List, Tuple, Callable, Dict
 from flask import Blueprint
-from ckan.types import CKANApp
+from ckan.types import CKANApp, Validator
 from ckan.common import CKANConfig
 
 import ckan.plugins as plugins
 import ckan.lib.helpers as core_helpers
 
-from ckanext.language_domains import helpers
+from ckanext.language_domains import helpers, validators
 from ckanext.language_domains.blueprint import language_domain_views
 
 
@@ -21,6 +20,7 @@ log = getLogger(__name__)
 class LanguageDomainsPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IMiddleware, inherit=True)
     plugins.implements(plugins.IConfigurer)
+    plugins.implements(plugins.IValidators)
     plugins.implements(plugins.ITemplateHelpers)
     plugins.implements(plugins.IBlueprint)
 
@@ -31,14 +31,23 @@ class LanguageDomainsPlugin(plugins.SingletonPlugin):
     # IConfigurer
     def update_config(self, config: 'CKANConfig'):
         # NOTE: monkey patch these core helpers as the other helpers call them directly
+        # TODO: fix upstream helpers to always use h object helpers!!!
         core_helpers.redirect_to = helpers.redirect_to
         core_helpers.get_site_protocol_and_host = helpers.get_site_protocol_and_host
         core_helpers._local_url = helpers.local_url
 
-        plugins.toolkit.add_template_directory(config, 'templates')
-        plugins.toolkit.add_resource('assets', 'language_domain_assets')
+        if plugins.toolkit.config.get('ckanext.language_domains.'
+                                      'enable_jwt_login', False):
+            plugins.toolkit.add_template_directory(config, 'templates')
+            plugins.toolkit.add_resource('assets', 'language_domain_assets')
 
-        config['ckan.auth.route_after_login'] = 'language_domains.login_master'
+            config['ckan.auth.route_after_login'] = 'language_domains.login_master'
+
+    # IValidators
+    def get_validators(self) -> Dict[str, Validator]:
+        return {
+            'load_json_string': validators.load_json_string,
+        }
 
     # ITemplateHelpers
     def get_helpers(self) -> Dict[str, Callable[..., Any]]:
@@ -47,26 +56,22 @@ class LanguageDomainsPlugin(plugins.SingletonPlugin):
 
     # IBlueprint
     def get_blueprint(self) -> List[Blueprint]:
-        return [language_domain_views]
+        if plugins.toolkit.config.get('ckanext.language_domains.'
+                                      'enable_jwt_login', False):
+            return [language_domain_views]
+        return []
+
 
 
 class LanguageDomainMiddleware(object):
     def __init__(self, app: Any, config: 'CKANConfig'):
         self.app = app
-        language_domains = config.get('ckanext.language_domains.domain_map', '')
-        if not language_domains:
-            self.language_domains = {}
-        else:
-            self.language_domains = json.loads(language_domains)
+        self.language_domains = config.get('ckanext.language_domains.domain_map')
         default_domain = config.get('ckan.site_url', '')
         uri_parts = urlsplit(default_domain)
         self.default_domain = uri_parts.netloc
         self.domain_scheme = uri_parts.scheme
-        root_paths = config.get('ckanext.language_domains.root_paths', '')
-        if not root_paths:
-            self.root_paths = {}
-        else:
-            self.root_paths = json.loads(root_paths)
+        self.root_paths = config.get('ckanext.language_domains.root_paths')
 
     def __call__(self, environ: Any, start_response: Any) -> Any:
         extra_response_headers = []

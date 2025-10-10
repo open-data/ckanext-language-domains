@@ -3,7 +3,6 @@ from functools import wraps
 from werkzeug.datastructures import ImmutableMultiDict
 from urllib.parse import urlsplit
 from logging import getLogger
-import json
 import jwt
 import datetime
 
@@ -56,17 +55,14 @@ def login_master():
         return h.redirect_to('user.login')
 
     came_from = request.args.get('_came_from', '')
+    if not h.url_is_local(came_from):
+        came_from = ''
 
     default_domain = config.get('ckan.site_url', '')
     uri_parts = urlsplit(default_domain)
     domain_scheme = uri_parts.scheme
 
-    language_domains = config.get('ckanext.language_domains.domain_map', '')
-    if not language_domains:
-        language_domains = {}
-    else:
-        language_domains = json.loads(language_domains)
-
+    language_domains = config.get('ckanext.language_domains.domain_map')
     current_domain = request.url
     uri_parts = urlsplit(current_domain)
     current_domain = uri_parts.netloc
@@ -109,11 +105,9 @@ def login():
         uri_parts = urlsplit(default_domain)
         domain_scheme = uri_parts.scheme
 
-        language_domains = config.get('ckanext.language_domains.domain_map', '')
+        language_domains = config.get('ckanext.language_domains.domain_map')
         trusted_domains = []
         if language_domains:
-            language_domains = json.loads(language_domains)
-
             current_domain = request.url
             uri_parts = urlsplit(current_domain)
             current_domain = uri_parts.netloc
@@ -210,17 +204,14 @@ def logout_master():
             return h.redirect_to('user.login')
 
         came_from = request.args.get('_came_from', '')
+        if not h.url_is_local(came_from):
+            came_from = ''
 
         default_domain = config.get('ckan.site_url', '')
         uri_parts = urlsplit(default_domain)
         domain_scheme = uri_parts.scheme
 
-        language_domains = config.get('ckanext.language_domains.domain_map', '')
-        if not language_domains:
-            language_domains = {}
-        else:
-            language_domains = json.loads(language_domains)
-
+        language_domains = config.get('ckanext.language_domains.domain_map')
         current_domain = request.url
         uri_parts = urlsplit(current_domain)
         current_domain = uri_parts.netloc
@@ -314,11 +305,9 @@ def logout():
         uri_parts = urlsplit(default_domain)
         domain_scheme = uri_parts.scheme
 
-        language_domains = config.get('ckanext.language_domains.domain_map', '')
+        language_domains = config.get('ckanext.language_domains.domain_map')
         trusted_domains = []
         if language_domains:
-            language_domains = json.loads(language_domains)
-
             current_domain = request.url
             uri_parts = urlsplit(current_domain)
             current_domain = uri_parts.netloc

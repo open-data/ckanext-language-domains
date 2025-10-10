@@ -7,13 +7,24 @@ groups:
         description: |
           Dictionary of language locales to domain list
         required: true
+        validators: load_json_string
       - key: ckanext.language_domains.root_paths
         example: {"example.com": "/data", "exemple.com": "/data"}
         description: |
           Dictionary of domains and their CKAN root_paths
         required: false
+        validators: load_json_string
       - key: ckanext.language_domains.secret
         example: 'thisisalegitsecret'
         description: |
           Secret key for JWT encoding.
         required: true
+      - key: ckanext.language_domains.enable_jwt_login
+        example: true
+        default: false
+        description: >
+          Enables multi-domain login and logout via JS
+          window messaging with JWT tokens. Requires
+          ckanext.language_domains.secret to be set.
+        required: false
+        validators: ignore_missing boolean_validator

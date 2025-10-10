@@ -2,7 +2,6 @@ css:
   contents:
     - styles/language_domains.css
   output: language_domains/%(version)s_language_domains.css
-  filters: cache_bust
 
 js_login_sender:
   contents:
@@ -11,7 +10,6 @@ js_login_sender:
     preload:
       - base/main  # need ckan JS and jQuery
   output: language_domains/%(version)s_language_login_sender.js
-  filters: cache_bust
 
 js_login_receiver:
   contents:
@@ -20,7 +18,6 @@ js_login_receiver:
     preload:
       - base/main  # need ckan JS and jQuery
   output: language_domains/%(version)s_language_login_receiver.js
-  filters: cache_bust
 
 js_logout_sender:
   contents:
@@ -29,7 +26,6 @@ js_logout_sender:
     preload:
       - base/main  # need ckan JS and jQuery
   output: language_domains/%(version)s_language_logout_sender.js
-  filters: cache_bust
 
 js_logout_receiver:
   contents:
@@ -38,4 +34,3 @@ js_logout_receiver:
     preload:
       - base/main  # need ckan JS and jQuery
   output: language_domains/%(version)s_language_logout_receiver.js
-  filters: cache_bust

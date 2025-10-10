@@ -4,7 +4,6 @@ from flask import (
 )
 from urllib.parse import urlparse, urlunparse
 from urllib.parse import urlsplit
-import json
 import re
 
 from typing import Any, cast, Union, Tuple, Dict
@@ -38,11 +37,7 @@ def _get_correct_language_domain() -> Tuple[str, str]:
     default_domain = config.get('ckan.site_url', '')
     uri_parts = urlsplit(default_domain)
     default_scheme = uri_parts.scheme
-    language_domains = config.get('ckanext.language_domains.domain_map', '')
-    if not language_domains:
-        language_domains = {}
-    else:
-        language_domains = json.loads(language_domains)
+    language_domains = config.get('ckanext.language_domains.domain_map')
     current_lang = h.lang()
     correct_lang_domain = current_domain
     domain_index_match = _get_domain_index(current_domain, language_domains)
@@ -79,11 +74,7 @@ def redirect_to(*args: Any, **kw: Any) -> Response:
             status_code = 301
             _url = _url[len(f'/{current_lang}'):]
         _scheme, _host = _get_correct_language_domain()
-        root_paths = config.get('ckanext.language_domains.root_paths', '')
-        if not root_paths:
-            root_paths = {}
-        else:
-            root_paths = json.loads(root_paths)
+        root_paths = config.get('ckanext.language_domains.root_paths')
         root_path = root_paths.get(_host, '').rstrip('/')
         root_path = root_path.replace('/{{LANG}}', '')
         if not _url.startswith(root_path):
@@ -146,11 +137,7 @@ def local_url(url_to_amend: str, **kw: Any):
 
     # ckan.root_path is defined when we have none standard language
     # position in the url
-    root_paths = config.get('ckanext.language_domains.root_paths', '')
-    if not root_paths:
-        root_paths = {}
-    else:
-        root_paths = json.loads(root_paths)
+    root_paths = config.get('ckanext.language_domains.root_paths')
     root_path = root_paths.get(host, '').rstrip('/')
     if root_path:
         # FIXME this can be written better once
