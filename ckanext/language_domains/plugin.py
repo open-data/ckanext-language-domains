@@ -72,6 +72,10 @@ class LanguageDomainMiddleware(object):
         self.default_domain = uri_parts.netloc
         self.domain_scheme = uri_parts.scheme
         self.root_paths = config.get('ckanext.language_domains.root_paths')
+        self.redirect_user_sessions = config.get(
+            'ckanext.language_domains.redirect_user_sessions', False)
+        self.enable_jwt_login = config.get(
+            'ckanext.language_domains.enable_jwt_login', False)
 
     def __call__(self, environ: Any, start_response: Any) -> Any:
         extra_response_headers = []
@@ -114,6 +118,7 @@ class LanguageDomainMiddleware(object):
         def _start_response(status: str,
                             response_headers: List[Tuple[str, str]],
                             exc_info: Optional[Any] = None):
+            # TODO: check if there is a user and don't do domain redirects??
             return start_response(
                 # browser requires non 200 response for Location header
                 status if not extra_response_headers else '301',

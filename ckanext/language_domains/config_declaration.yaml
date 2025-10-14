@@ -19,6 +19,17 @@ groups:
         description: |
           Secret key for JWT encoding.
         required: true
+      - key: ckanext.language_domains.redirect_user_sessions
+        example: true
+        default: false
+        description: >
+          Controls whether or not domains will be redirected for
+          logged in users. E.g. if logged in on the English domain,
+          you will not be redirected to the French domain - and vice versa.
+          This helps with sticky sessions when not using the
+          ckanext.language_domains.enable_jwt_login option.
+        required: false
+        validators: ignore_missing boolean_validator
       - key: ckanext.language_domains.enable_jwt_login
         example: true
         default: false
