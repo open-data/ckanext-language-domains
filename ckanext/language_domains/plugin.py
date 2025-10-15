@@ -79,9 +79,12 @@ class LanguageDomainMiddleware(object):
 
     def __call__(self, environ: Any, start_response: Any) -> Any:
         extra_response_headers = []
-        current_domain = environ['HTTP_X_FORWARDED_HOST'] or \
-            environ['HTTP_HOST'] or \
-            self.default_domain
+        if 'HTTP_X_FORWARDED_HOST' in environ and environ['HTTP_X_FORWARDED_HOST']:
+            current_domain = environ['HTTP_X_FORWARDED_HOST']
+        elif 'HTTP_HOST' in environ and environ['HTTP_HOST']:
+            current_domain = environ['HTTP_HOST']
+        else:
+            current_domain = self.default_domain
         current_lang = environ['CKAN_LANG']
         current_uri = str(environ['REQUEST_URI'])
         correct_lang_domain = self.default_domain
