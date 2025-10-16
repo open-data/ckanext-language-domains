@@ -66,7 +66,6 @@ class LanguageDomainsPlugin(plugins.SingletonPlugin):
         return []
 
 
-
 class LanguageDomainMiddleware(object):
     def __init__(self, app: Any, config: 'CKANConfig'):
         self.app = app
