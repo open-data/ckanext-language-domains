@@ -6,7 +6,7 @@ from urllib.parse import urlparse, urlunparse
 from urllib.parse import urlsplit
 import re
 
-from typing import Any, cast, Union, Tuple, Dict
+from typing import Any, cast, Union, Tuple, Dict, Optional
 from ckan.types import Response
 
 from ckan.exceptions import CkanUrlException
@@ -20,11 +20,11 @@ def _get_domain_index(current_domain: str, language_domains: Dict[str, str]) -> 
         try:
             return lang_domains.index(current_domain)
         except ValueError:
-            return 0
+            continue
     return 0
 
 
-def _get_correct_language_domain() -> Tuple[str, str]:
+def _get_correct_language_domain(locale: Optional[str] = None) -> Tuple[str, str]:
     """
     Returns the HTTP scheme and mapped domain for the current language.
 
@@ -38,7 +38,7 @@ def _get_correct_language_domain() -> Tuple[str, str]:
     uri_parts = urlsplit(default_domain)
     default_scheme = uri_parts.scheme
     language_domains = config.get('ckanext.language_domains.domain_map')
-    current_lang = h.lang()
+    current_lang = locale or h.lang()
     correct_lang_domain = current_domain
     domain_index_match = _get_domain_index(current_domain, language_domains)
     for lang_code, lang_domains in language_domains.items():
@@ -84,12 +84,13 @@ def redirect_to(*args: Any, **kw: Any) -> Response:
     return cast(Response, _flask_redirect(_url, code=status_code))
 
 
-def get_site_protocol_and_host() -> Union[Tuple[str, str], Tuple[None, None]]:
+def get_site_protocol_and_host(locale: Optional[str] = None) -> Union[
+        Tuple[str, str], Tuple[None, None]]:
     """
     Overrides and monkey patches the Core helper get_site_protocol_and_host
     to use ckanext.language_domains.domain_map instead of ckan.site_url
     """
-    return _get_correct_language_domain()
+    return _get_correct_language_domain(locale=locale)
 
 
 def local_url(url_to_amend: str, **kw: Any):
@@ -120,7 +121,7 @@ def local_url(url_to_amend: str, **kw: Any):
             default_locale = True
 
     root = ''
-    protocol, host = get_site_protocol_and_host()
+    protocol, host = get_site_protocol_and_host(locale)
     if kw.get('qualified', False) or kw.get('_external', False):
         # if qualified is given we want the full url ie http://...
         parts = urlparse(
@@ -139,24 +140,18 @@ def local_url(url_to_amend: str, **kw: Any):
     # position in the url
     root_paths = config.get('ckanext.language_domains.root_paths')
     root_path = root_paths.get(host, '').rstrip('/')
-    if root_path:
-        # FIXME this can be written better once
-        # the merge into the portal core is done
-        # we have a special root specified so use that
-        if default_locale:
-            root_path = re.sub('/{{LANG}}', '', root_path)
-        else:
-            root_path = re.sub('{{LANG}}', str(locale), root_path)
-        # make sure we don't have a trailing / on the root
-        if root_path[-1] == '/':
-            root_path = root_path[:-1]
+    if default_locale:
+        root_path = re.sub('/{{LANG}}', '', root_path)
     else:
-        if default_locale:
-            root_path = ''
-        else:
-            root_path = '/' + str(locale)
+        root_path = re.sub('{{LANG}}', str(locale), root_path)
+    # make sure we don't have a trailing / on the root
+    if root_path and root_path[-1] == '/':
+        root_path = root_path[:-1]
 
-    url_path = url_to_amend[len(root):]
+    # root_path domain may be different from url_to_amend domain
+    # if a different locale is provided. Just use urlsplit.path
+    url_to_amend_parts = urlsplit(url_to_amend)
+    url_path = url_to_amend_parts.path
     url = '%s%s%s' % (root, root_path, url_path)
 
     # stop the root being added twice in redirects
