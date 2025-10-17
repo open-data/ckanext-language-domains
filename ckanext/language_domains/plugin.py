@@ -1,5 +1,5 @@
 from logging import getLogger
-from urllib.parse import urlparse, urlsplit
+from urllib.parse import urlsplit
 
 from typing import Any, Optional, List, Tuple, Callable, Dict
 from flask import Blueprint
@@ -8,7 +8,6 @@ from ckan.common import CKANConfig
 
 import ckan.plugins as plugins
 import ckan.lib.helpers as core_helpers
-from ckan.config.middleware import flask_app
 
 from ckanext.language_domains import helpers, validators
 from ckanext.language_domains.blueprint import language_domain_views
@@ -27,9 +26,6 @@ class LanguageDomainsPlugin(plugins.SingletonPlugin):
 
     # IMiddleware
     def make_middleware(self, app: CKANApp, config: 'CKANConfig') -> CKANApp:
-        # NOTE: monkey patch the HostHeaderMiddleware to allow for
-        #       language domains on the user authentication routes.
-        flask_app.HostHeaderMiddleware = LanguageDomainHostHeaderMiddleware
         return LanguageDomainMiddleware(app, config)
 
     # IConfigurer
@@ -132,29 +128,3 @@ class LanguageDomainMiddleware(object):
                 exc_info)
 
         return self.app(environ, _start_response)
-
-
-class LanguageDomainHostHeaderMiddleware(object):
-    """
-    Override the core HostHeaderMiddleware to allow for
-    language domains on the user authentication routes.
-    """
-    def __init__(self, app: CKANApp):
-        self.app = app
-
-    def __call__(self, environ: Any, start_response: Any) -> Any:
-        path_info = environ['PATH_INFO']
-        if path_info in ['/login_generic', '/user/login',
-                         '/user/logout', '/user/logged_in',
-                         '/user/logged_out']:
-            site_url = plugins.toolkit.config.get('ckan.site_url')
-            parts = urlparse(site_url)
-            host = str(parts.netloc)
-            lang_domains = plugins.toolkit.config.get(
-                'ckanext.language_domains.domain_map')
-            for _lang_code, domain_list in lang_domains.items():
-                if environ['HTTP_HOST'] in domain_list:
-                    host = environ['HTTP_HOST']
-                    break
-            environ['HTTP_HOST'] = host
-        return self.app(environ, start_response)
