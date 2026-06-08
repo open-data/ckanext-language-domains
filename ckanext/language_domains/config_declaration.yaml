@@ -14,6 +14,13 @@ groups:
           Dictionary of domains and their CKAN root_paths
         required: false
         validators: load_json_string
+      - key: ckanext.language_domains.keep_lang_paths
+        example: true
+        default: false
+        description: |
+          Enable keeping language paths such as /en and /fr in the URIs.
+        required: false
+        validators: ignore_missing boolean_validator
       - key: ckanext.language_domains.secret
         example: 'thisisalegitsecret'
         description: |

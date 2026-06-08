@@ -42,7 +42,11 @@ def _get_correct_language_domain(locale: Optional[str] = None) -> Tuple[str, str
     correct_lang_domain = current_domain
     domain_index_match = _get_domain_index(current_domain, language_domains)
     for lang_code, lang_domains in language_domains.items():
-        if lang_code == current_lang and current_domain not in lang_domains:
+        if (
+          current_domain != lang_domains[domain_index_match] and
+          lang_code == current_lang and
+          current_domain not in lang_domains
+        ):
             correct_lang_domain = lang_domains[domain_index_match]
     return (default_scheme, correct_lang_domain)
 
@@ -69,16 +73,28 @@ def redirect_to(*args: Any, **kw: Any) -> Response:
     status_code = 302
 
     if _url.startswith('/'):
+        keep_lang_paths = config.get(
+            'ckanext.language_domains.keep_lang_paths', False)
         current_lang = h.lang()
-        if _url.startswith(f'/{current_lang}/'):
-            status_code = 301
-            _url = _url[len(f'/{current_lang}'):]
         _scheme, _host = _get_correct_language_domain()
         root_paths = config.get('ckanext.language_domains.root_paths')
         root_path = root_paths.get(_host, '').rstrip('/')
-        root_path = root_path.replace('/{{LANG}}', '')
-        if not _url.startswith(root_path):
-            _url = root_path + _url
+        if not keep_lang_paths:
+            root_path = re.sub('{{LANG}}', '', root_path).rstrip('/')
+        else:
+            root_path = re.sub('{{LANG}}', current_lang, root_path)
+        if not keep_lang_paths and _url.startswith(f'/{current_lang}/'):
+            # set the redirect url for non lang paths
+            _url = _url[len(f'/{current_lang}'):]
+        elif not root_path and not _url.startswith(f'/{current_lang}/'):
+            # set the redirect url for non root paths using lang paths
+            _url = f'/{current_lang}{_url}'
+        elif root_path and not _url.startswith(root_path):
+            # set the redirect url for root paths using lang paths
+            if _url.startswith(f'/{current_lang}/'):
+                _url = _url[len(f'/{current_lang}'):]
+            _url = f'{root_path}{_url}'
+
         _url = str(f'{_scheme}://{_host}{_url}')
 
     return cast(Response, _flask_redirect(_url, code=status_code))
@@ -120,6 +136,9 @@ def local_url(url_to_amend: str, **kw: Any):
         except TypeError:
             default_locale = True
 
+    if default_locale:
+        locale = config.get('ckan.locale_default', 'en')
+
     root = ''
     protocol, host = get_site_protocol_and_host(locale)
     if kw.get('qualified', False) or kw.get('_external', False):
@@ -139,8 +158,10 @@ def local_url(url_to_amend: str, **kw: Any):
     # ckan.root_path is defined when we have none standard language
     # position in the url
     root_paths = config.get('ckanext.language_domains.root_paths')
+    keep_lang_paths = config.get(
+        'ckanext.language_domains.keep_lang_paths', False)
     root_path = root_paths.get(host, '').rstrip('/')
-    if default_locale:
+    if default_locale and not keep_lang_paths:
         root_path = re.sub('/{{LANG}}', '', root_path)
     else:
         root_path = re.sub('{{LANG}}', str(locale), root_path)
@@ -152,6 +173,10 @@ def local_url(url_to_amend: str, **kw: Any):
     # if a different locale is provided. Just use urlsplit.path
     url_to_amend_parts = urlsplit(url_to_amend)
     url_path = url_to_amend_parts.path
+    if keep_lang_paths and not root_path and not url_path.startswith(f'/{locale}/'):
+        # add locale if no root path, and if keeping lang paths
+        url_path = f'/{locale}{url_path}'
+
     url = '%s%s%s' % (root, root_path, url_path)
 
     # stop the root being added twice in redirects
