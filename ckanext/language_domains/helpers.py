@@ -179,6 +179,12 @@ def local_url(url_to_amend: str, **kw: Any):
 
     url = '%s%s%s' % (root, root_path, url_path)
 
+    if url_to_amend_parts.query:
+        url += '?' + url_to_amend_parts.query
+
+    if url_to_amend_parts.fragment:
+        url += '#' + url_to_amend_parts.fragment
+
     # stop the root being added twice in redirects
     if no_root and url_to_amend.startswith(root):
         url = url_to_amend[len(root):]
