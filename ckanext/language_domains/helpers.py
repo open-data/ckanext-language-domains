@@ -31,14 +31,21 @@ def _get_correct_language_domain(locale: Optional[str] = None) -> Tuple[str, str
     At this point, the LanguageDomainMiddleware has already set the
     correct language for the current domain.
     """
-    current_domain = request.url
-    uri_parts = urlsplit(current_domain)
-    current_domain = uri_parts.netloc
     default_domain = config.get('ckan.site_url', '')
     uri_parts = urlsplit(default_domain)
     default_scheme = uri_parts.scheme
+    default_domain = uri_parts.netloc
+    try:
+        current_domain = request.url
+        uri_parts = urlsplit(current_domain)
+        current_domain = uri_parts.netloc
+        current_lang = locale or h.lang()
+    except RuntimeError:
+        # outside of the Flask request/view context,
+        # use default domain & language
+        current_domain = default_domain
+        current_lang = config.get('ckan.locale_default', 'en')
     language_domains = config.get('ckanext.language_domains.domain_map')
-    current_lang = locale or h.lang()
     correct_lang_domain = current_domain
     domain_index_match = _get_domain_index(current_domain, language_domains)
     for lang_code, lang_domains in language_domains.items():
@@ -133,7 +140,9 @@ def local_url(url_to_amend: str, **kw: Any):
         try:
             locale = request.environ.get('CKAN_LANG')
             default_locale = request.environ.get('CKAN_LANG_IS_DEFAULT', True)
-        except TypeError:
+        except (TypeError, RuntimeError):
+            # outside of the Flask request/view context,
+            # or does not have a language, use default locale
             default_locale = True
 
     if default_locale:
