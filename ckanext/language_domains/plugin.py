@@ -7,8 +7,10 @@ from flask import Blueprint
 from ckan.types import CKANApp, Validator
 from ckan.common import CKANConfig
 
+import ckan
 import ckan.plugins as plugins
 import ckan.lib.helpers as core_helpers
+import ckan.views as core_views
 
 from ckanext.language_domains import helpers, validators
 from ckanext.language_domains.blueprint import language_domain_views
@@ -37,6 +39,8 @@ class LanguageDomainsPlugin(plugins.SingletonPlugin):
         core_helpers.redirect_to = helpers.redirect_to
         core_helpers.get_site_protocol_and_host = helpers.get_site_protocol_and_host
         core_helpers._local_url = helpers.local_url
+        # core_views.set_ckan_current_url = helpers.set_ckan_current_url
+        # ckan.views.set_ckan_current_url = helpers.set_ckan_current_url
 
         if plugins.toolkit.config.get('ckanext.language_domains.'
                                       'enable_jwt_login', False):
@@ -64,6 +68,21 @@ class LanguageDomainsPlugin(plugins.SingletonPlugin):
         return []
 
 
+class LanguageDomainBaseware(object):
+    def __int__(self, app: Any, config: 'CKANConfig',
+                flask_app: Optional[Any] = None):
+        self.original_flask_app = flask_app or app
+        self.app = app
+
+        self.language_domains = config.get('ckanext.language_domains.domain_map')
+        default_domain = config.get('ckan.site_url', '')
+        uri_parts = urlsplit(default_domain)
+        self.default_domain = uri_parts.netloc
+        self.domain_scheme = uri_parts.scheme
+
+        self.root_paths = config.get('ckanext.language_domains.root_paths')
+
+
 class LanguageDomainMiddleware(object):
     def __init__(self, app: Any, config: 'CKANConfig',
                  flask_app: Optional[Any] = None):
@@ -75,10 +94,7 @@ class LanguageDomainMiddleware(object):
         self.default_domain = uri_parts.netloc
         self.domain_scheme = uri_parts.scheme
         self.root_paths = config.get('ckanext.language_domains.root_paths')
-        self.redirect_user_sessions = config.get(
-            'ckanext.language_domains.redirect_user_sessions', False)
-        self.enable_jwt_login = config.get(
-            'ckanext.language_domains.enable_jwt_login', False)
+
         self.keep_lang_paths = config.get(
             'ckanext.language_domains.keep_lang_paths', False)
 
@@ -98,6 +114,7 @@ class LanguageDomainMiddleware(object):
         current_uri_no_root = None  # var for later checks
         requesting_uri = current_uri  # var for later checks
         correct_lang_domain = self.default_domain  # start with the ckan.site_url host
+        # TODO: use CKAN_CURRENT_URL
         domain_index_match = helpers._get_domain_index(
             current_domain, self.language_domains)
         for lang_code, lang_domains in self.language_domains.items():
@@ -153,6 +170,12 @@ class LanguageDomainMiddleware(object):
             if environ['REQUEST_METHOD'] == 'POST':
                 # NOTE: cannot re-POST data from Location header redirects
                 continue
+            if 'autocomplete' in current_uri:
+                log.info('    ')
+                log.info('DEBUGGING::STEP 1')
+                log.info('    ')
+                log.info(current_uri)
+                log.info('    ')
             if (
               current_domain != correct_lang_domain or
               (
@@ -165,11 +188,18 @@ class LanguageDomainMiddleware(object):
                 extra_response_headers = [(
                     'Location',
                     f'{self.domain_scheme}://{correct_lang_domain}{current_uri}')]
+            if 'autocomplete' in current_uri:
+                log.info('    ')
+                log.info('DEBUGGING::STEP 2')
+                log.info('    ')
+                log.info(f'{self.domain_scheme}://{correct_lang_domain}{current_uri}')
+                log.info('    ')
 
         def _start_response(status: str,
                             response_headers: List[Tuple[str, str]],
                             exc_info: Optional[Any] = None):
             # TODO: check if there is a user and don't do domain redirects??
+            #       with ckanext.language_domains.redirect_user_sessions
             return start_response(
                 # browser requires non 200 response for Location header
                 status if not extra_response_headers else '301',
