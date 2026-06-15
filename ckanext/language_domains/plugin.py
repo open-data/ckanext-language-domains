@@ -3,7 +3,6 @@ from urllib.parse import urlsplit
 import re
 
 from typing import Any, Optional, List, Tuple, Callable, Dict
-from flask import Blueprint
 from ckan.types import CKANApp, Validator
 from ckan.common import CKANConfig
 
@@ -13,7 +12,6 @@ import ckan.lib.helpers as core_helpers
 import ckan.views as core_views
 
 from ckanext.language_domains import helpers, validators
-from ckanext.language_domains.blueprint import language_domain_views
 
 
 log = getLogger(__name__)
@@ -25,7 +23,6 @@ class LanguageDomainsPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IConfigurer)
     plugins.implements(plugins.IValidators)
     plugins.implements(plugins.ITemplateHelpers)
-    plugins.implements(plugins.IBlueprint)
 
     # IMiddleware
     def make_middleware(self, app: CKANApp, config: 'CKANConfig') -> CKANApp:
@@ -42,13 +39,6 @@ class LanguageDomainsPlugin(plugins.SingletonPlugin):
         # core_views.set_ckan_current_url = helpers.set_ckan_current_url
         # ckan.views.set_ckan_current_url = helpers.set_ckan_current_url
 
-        if plugins.toolkit.config.get('ckanext.language_domains.'
-                                      'enable_jwt_login', False):
-            plugins.toolkit.add_template_directory(config, 'templates')
-            plugins.toolkit.add_resource('assets', 'language_domain_assets')
-
-            config['ckan.auth.route_after_login'] = 'language_domains.login_master'
-
     # IValidators
     def get_validators(self) -> Dict[str, Validator]:
         return {
@@ -59,13 +49,6 @@ class LanguageDomainsPlugin(plugins.SingletonPlugin):
     def get_helpers(self) -> Dict[str, Callable[..., Any]]:
         return {'redirect_to': helpers.redirect_to,
                 'get_site_protocol_and_host': helpers.get_site_protocol_and_host}
-
-    # IBlueprint
-    def get_blueprint(self) -> List[Blueprint]:
-        if plugins.toolkit.config.get('ckanext.language_domains.'
-                                      'enable_jwt_login', False):
-            return [language_domain_views]
-        return []
 
 
 class LanguageDomainBaseware(object):

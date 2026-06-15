@@ -2,47 +2,25 @@ version: 1
 groups:
   - annotation: ckanext-language-domains settings
     options:
+
       - key: ckanext.language_domains.domain_map
         example: {"en": ["example.com"], "fr": ["exemple.com"]}
         description: |
           Dictionary of language locales to domain list
         required: true
         validators: load_json_string
+
       - key: ckanext.language_domains.root_paths
         example: {"example.com": "/data", "exemple.com": "/data"}
         description: |
           Dictionary of domains and their CKAN root_paths
         required: false
         validators: load_json_string
+
       - key: ckanext.language_domains.keep_lang_paths
         example: true
         default: false
         description: |
           Enable keeping language paths such as /en and /fr in the URIs.
-        required: false
-        validators: ignore_missing boolean_validator
-      - key: ckanext.language_domains.secret
-        example: 'thisisalegitsecret'
-        description: |
-          Secret key for JWT encoding.
-        required: true
-      - key: ckanext.language_domains.redirect_user_sessions
-        example: true
-        default: false
-        description: >
-          Controls whether or not domains will be redirected for
-          logged in users. E.g. if logged in on the English domain,
-          you will not be redirected to the French domain - and vice versa.
-          This helps with sticky sessions when not using the
-          ckanext.language_domains.enable_jwt_login option.
-        required: false
-        validators: ignore_missing boolean_validator
-      - key: ckanext.language_domains.enable_jwt_login
-        example: true
-        default: false
-        description: >
-          Enables multi-domain login and logout via JS
-          window messaging with JWT tokens. Requires
-          ckanext.language_domains.secret to be set.
         required: false
         validators: ignore_missing boolean_validator
