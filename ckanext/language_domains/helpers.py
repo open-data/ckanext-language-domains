@@ -13,6 +13,9 @@ from ckan.lib import i18n
 from ckan.lib.helpers import _get_auto_flask_context
 from ckan.plugins.toolkit import h, config, request
 
+from logging import getLogger
+log = getLogger(__name__)
+
 
 def _get_domain_index(current_domain: str, language_domains: Dict[str, str]) -> int:
     for _lang_code, lang_domains in language_domains.items():
@@ -43,7 +46,7 @@ def _get_correct_language_domain(locale: Optional[str] = None) -> Tuple[str, str
         # outside of the Flask request/view context,
         # use default domain & language
         current_domain = default_domain
-        current_lang = config['ckan.locale_default']
+        current_lang = locale or config['ckan.locale_default']
     language_domains = config.get('ckanext.language_domains.domain_map')
     correct_lang_domain = current_domain
     domain_index_match = _get_domain_index(current_domain, language_domains)
@@ -55,6 +58,23 @@ def _get_correct_language_domain(locale: Optional[str] = None) -> Tuple[str, str
         ):
             correct_lang_domain = lang_domains[domain_index_match]
     return (default_scheme, correct_lang_domain)
+
+
+def _generate_root_path(hostname: str, lang_code: str) -> str:
+    root_paths = config.get('ckanext.language_domains.root_paths')
+    keep_lang_paths = config.get(
+        'ckanext.language_domains.keep_lang_paths', False)
+    root_path = root_paths.get(hostname, '').rstrip('/')
+    if keep_lang_paths:
+        # keeping lang paths, so do replacement in root path
+        root_path = re.sub('{{LANG}}', lang_code, root_path)
+    else:
+        # remove the lang code replacement from the root path
+        root_path = re.sub('{{LANG}}', '', root_path).rstrip('/')
+    if keep_lang_paths and not root_path:
+        # fallback to lang paths if no root path
+        root_path = f'/{lang_code}'
+    return root_path, keep_lang_paths
 
 
 def redirect_to(*args: Any, **kw: Any) -> Response:
@@ -120,7 +140,6 @@ def local_url(url_to_amend: str, **kw: Any):
     Overrides and monkey patches the Core helper method _local_url
     to use ckanext.language_domains.root_paths instead of ckan.root_path
     """
-    default_locale = False
     locale = kw.pop('locale', None)
     no_root = kw.pop('__ckan_no_root', False)
     allowed_locales = ['default'] + i18n.get_locales()
@@ -132,23 +151,23 @@ def local_url(url_to_amend: str, **kw: Any):
     if _auto_flask_context:
         _auto_flask_context.push()
 
-    if locale:
-        if locale == 'default':
-            default_locale = True
-    else:
-        try:
-            locale = request.environ.get('CKAN_LANG')
-            default_locale = request.environ.get('CKAN_LANG_IS_DEFAULT', True)
-        except (TypeError, RuntimeError):
-            # outside of the Flask request/view context,
-            # or does not have a language, use default locale
-            default_locale = True
+    protocol, host = get_site_protocol_and_host(locale)
+    try:
+        locale = locale or request.environ.get('__LDM__LANG_CODE') or \
+              request.environ.get('CKAN_LANG')
+        host = request.environ.get('__LDM__CORRECT_DOMAIN') or host
+        root_path = request.environ.get('__LDM__ROOT_PATH')
+        keep_lang_paths = request.environ.get('__LDM__KEEP_LANG_PATHS')
+    except (TypeError, RuntimeError):
+        # outside of the Flask request/view context,
+        # or does not have a language, use default locale
+        locale = config['ckan.locale_default']
+        root_path, keep_lang_paths = _generate_root_path(host, locale)
 
-    if default_locale:
+    if locale == 'default':
         locale = config['ckan.locale_default']
 
     root = ''
-    protocol, host = get_site_protocol_and_host(locale)
     if kw.get('qualified', False) or kw.get('_external', False):
         # if qualified is given we want the full url ie http://...
         parts = urlparse(
@@ -163,24 +182,11 @@ def local_url(url_to_amend: str, **kw: Any):
     if _auto_flask_context:
         _auto_flask_context.pop()
 
-    # ckan.root_path is defined when we have none standard language
-    # position in the url
-    root_paths = config.get('ckanext.language_domains.root_paths')
-    keep_lang_paths = config.get(
-        'ckanext.language_domains.keep_lang_paths', False)
-    root_path = root_paths.get(host, '').rstrip('/')
-    if default_locale and not keep_lang_paths:
-        root_path = re.sub('/{{LANG}}', '', root_path)
-    else:
-        root_path = re.sub('{{LANG}}', str(locale), root_path)
-    # make sure we don't have a trailing / on the root
-    if root_path and root_path[-1] == '/':
-        root_path = root_path[:-1]
-
     # root_path domain may be different from url_to_amend domain
     # if a different locale is provided. Just use urlsplit.path
     url_to_amend_parts = urlsplit(url_to_amend)
     url_path = url_to_amend_parts.path
+
     if keep_lang_paths and not root_path and not url_path.startswith(f'/{locale}/'):
         # add locale if no root path, and if keeping lang paths
         url_path = f'/{locale}{url_path}'
@@ -196,72 +202,10 @@ def local_url(url_to_amend: str, **kw: Any):
     # stop the root being added twice in redirects
     if no_root and url_to_amend.startswith(root):
         url = url_to_amend[len(root):]
-        if not default_locale:
-            url = '/%s%s' % (locale, url)
+        url = '/%s%s' % (locale, url)
 
     if url == '/packages':
         error = 'There is a broken url being created %s' % kw
         raise CkanUrlException(error)
 
-    if 'autocomplete' in url:
-        from logging import getLogger
-        log = getLogger(__name__)
-        log.info('    ')
-        log.info('DEBUGGING::')
-        log.info('    ')
-        log.info(url)
-        log.info('    ')
-
     return url
-
-
-def set_ckan_current_url(environ: Any) -> None:
-    # TODO: monkey patch ckanext.datastore.backend.postgres._insert_links ???
-    """
-    Overrides and monkey patches the Core view method set_ckan_current_url
-    to use ckanext.language_domains.root_paths instead of ckan.root_path
-    """
-    # Current application url
-    path_info = environ['REQUEST_URI']
-    # sort out weird encodings
-    path_info = \
-        '/'.join(quote(pce, '') for pce in path_info.split('/'))
-
-    try:
-        locale = environ.get('CKAN_LANG')
-        default_locale = environ.get('CKAN_LANG_IS_DEFAULT', True)
-    except (TypeError, RuntimeError):
-        # outside of the Flask request/view context,
-        # or does not have a language, use default locale
-        default_locale = True
-
-    if default_locale:
-        locale = config['ckan.locale_default']
-
-    _protocol, host = get_site_protocol_and_host(locale)
-
-    root_paths = config.get('ckanext.language_domains.root_paths')
-    keep_lang_paths = config.get(
-        'ckanext.language_domains.keep_lang_paths', False)
-    root_path = root_paths.get(host, '').rstrip('/')
-    if default_locale and not keep_lang_paths:
-        root_path = re.sub('/{{LANG}}', '', root_path)
-    else:
-        root_path = re.sub('{{LANG}}', str(locale), root_path)
-    # make sure we don't have a trailing / on the root
-    if root_path and root_path[-1] == '/':
-        root_path = root_path[:-1]
-
-    environ['CKAN_CURRENT_URL'] = path_info
-
-    from logging import getLogger
-    log = getLogger(__name__)
-    log.info('    ')
-    log.info('DEBUGGING::STEP set_ckan_current_url')
-    log.info('    ')
-    log.info(path_info)
-    log.info(root_path)
-    log.info(environ['CKAN_CURRENT_URL'])
-    log.info(environ['REQUEST_URI'])
-    # log.info(plugins.toolkit.request.environ['CKAN_CURRENT_URL'])
-    log.info('    ')
