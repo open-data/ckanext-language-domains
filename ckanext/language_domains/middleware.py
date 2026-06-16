@@ -6,6 +6,9 @@ from ckan.common import CKANConfig
 
 from ckanext.language_domains.helpers import _get_domain_index
 
+from logging import getLogger
+log = getLogger(__name__)
+
 
 class LanguageDomainMiddleware(object):
     """
@@ -25,8 +28,7 @@ class LanguageDomainMiddleware(object):
         self.default_domain = uri_parts.netloc
         self.domain_scheme = uri_parts.scheme
         self.root_paths = config.get('ckanext.language_domains.root_paths')
-        self.keep_lang_paths = config.get(
-            'ckanext.language_domains.keep_lang_paths', False)
+        self.keep_lang_paths = config['ckanext.language_domains.keep_lang_paths']
 
     def __call__(self, environ: Any, start_response: Any) -> Any:
         """
@@ -82,9 +84,8 @@ class LanguageDomainMiddleware(object):
                 # at this point, we have "corrected" the host and lang codes
                 # so if it does not match, then it is not the one we want
                 continue
-            # save the lang code for easier sub-classing
+            # make sure we have the correct lang and domain for further parsing
             correct_lang_code = lang_code
-            # a user has navigated to a lang sub dir, move 'em to the domain
             correct_lang_domain = lang_domains[domain_index_match]
             # we have the correct lang code and domains now, break
             break

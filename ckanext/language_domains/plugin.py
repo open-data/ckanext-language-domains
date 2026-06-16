@@ -4,12 +4,11 @@ from typing import Any, Callable, Dict
 from ckan.types import CKANApp, Validator
 from ckan.common import CKANConfig
 
-import ckan
 import ckan.plugins as plugins
 import ckan.lib.helpers as core_helpers
-import ckan.views as core_views
+import ckanext.datastore.backend.postgres as core_ds_psql
 
-from ckanext.language_domains import helpers, validators
+from ckanext.language_domains import helpers, validators, logic
 from ckanext.language_domains.middleware import LanguageDomainMiddleware
 
 
@@ -22,6 +21,7 @@ class LanguageDomainsPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IConfigurer)
     plugins.implements(plugins.IValidators)
     plugins.implements(plugins.ITemplateHelpers)
+    plugins.implements(plugins.IActions)
 
     # IMiddleware
     def make_middleware(self, app: CKANApp, config: 'CKANConfig') -> CKANApp:
@@ -31,10 +31,12 @@ class LanguageDomainsPlugin(plugins.SingletonPlugin):
     # IConfigurer
     def update_config(self, config: 'CKANConfig'):
         # NOTE: monkey patch these core helpers as the other helpers call them directly
-        # TODO: fix upstream helpers to always use h object helpers!!!
+        #       and other plugins may import them directly
         core_helpers.redirect_to = helpers.redirect_to
         core_helpers.get_site_protocol_and_host = helpers.get_site_protocol_and_host
         core_helpers._local_url = helpers.local_url
+
+        # TODO: monkey patch ckanext.datastore.backend.postgres._insert_links
         # core_views.set_ckan_current_url = helpers.set_ckan_current_url
         # ckan.views.set_ckan_current_url = helpers.set_ckan_current_url
 
@@ -48,3 +50,7 @@ class LanguageDomainsPlugin(plugins.SingletonPlugin):
     def get_helpers(self) -> Dict[str, Callable[..., Any]]:
         return {'redirect_to': helpers.redirect_to,
                 'get_site_protocol_and_host': helpers.get_site_protocol_and_host}
+
+    # IActions
+    def get_actions(self) -> Dict[str, Callable[..., Any]]:
+        return {'package_show': logic.package_show}
