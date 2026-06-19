@@ -7,7 +7,7 @@ from ckan.plugins.toolkit import (
     side_effect_free,
 )
 
-from ckanext.language_domains.helpers import _get_url_parts
+from ckanext.language_domains.utils import get_url_parts
 
 
 @chained_action
@@ -33,7 +33,7 @@ def package_show(up_func: Action,
 
     if pkg_dict.get('resources'):
         # only get the mapped parts if there are resources
-        scheme, lang, domain, root_path, _keep_lang_paths = _get_url_parts()
+        scheme, lang, domain, root_path, _keep_lang_paths = get_url_parts()
 
     for r in pkg_dict.get('resources', []):
         if r.get('url_type') != 'upload':

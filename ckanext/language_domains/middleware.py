@@ -4,7 +4,7 @@ import re
 from typing import Any, Optional, List, Tuple
 from ckan.common import CKANConfig
 
-from ckanext.language_domains.helpers import _get_domain_index
+from ckanext.language_domains.utils import get_domain_index
 
 from logging import getLogger
 log = getLogger(__name__)
@@ -53,7 +53,7 @@ class LanguageDomainMiddleware(object):
         requesting_uri = current_uri  # var for later checks
 
         correct_lang_domain = self.default_domain  # start with the ckan.site_url host
-        domain_index_match = _get_domain_index(current_domain, self.language_domains)
+        domain_index_match = get_domain_index(current_domain, self.language_domains)
 
         for lang_code, lang_domains in self.language_domains.items():
             if current_domain == lang_domains[domain_index_match]:
