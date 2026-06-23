@@ -2,7 +2,7 @@ from flask import (
     redirect as _flask_redirect,
     url_for as _flask_default_url_for
 )
-from urllib.parse import urlparse, urlunparse, urlsplit
+from urllib.parse import urlparse, urlunparse, urlsplit, urlencode, parse_qsl
 
 from typing import Any, cast, Union, Tuple, Optional
 from ckan.types import Response
@@ -10,7 +10,7 @@ from ckan.types import Response
 from ckan.exceptions import CkanUrlException
 from ckan.lib import i18n
 from ckan.lib.helpers import _get_auto_flask_context
-from ckan.plugins.toolkit import h
+from ckan.plugins.toolkit import h, request
 
 from ckanext.language_domains.utils import get_url_parts
 
@@ -111,3 +111,98 @@ def local_url(url_to_amend: str, **kw: Any):
         raise CkanUrlException(error)
 
     return url
+
+
+def dcat_catalog_uri() -> str:
+    """
+    Monkey patches the DCAT Plugin catalog_uri util method
+    to specify the correct domain and root paths
+    """
+    scheme, lang, domain, root_path, keep_lang_paths = get_url_parts()
+    catalog_uri = str(f'{scheme}://{domain}')
+
+    if not root_path and keep_lang_paths:
+        catalog_uri += f'/{lang}'
+    elif root_path:
+        catalog_uri += f'{root_path}'
+
+    return catalog_uri
+
+
+def create_atom_id(atom_id: str, resource_path: str,
+                   authority_name: Optional[str] = None,
+                   date_string: Optional[str] = None) -> str:
+    """
+    Sets the correct domain and root paths for the Atom feeds IDs
+    """
+    scheme, lang, domain, root_path, keep_lang_paths = get_url_parts()
+    if not keep_lang_paths and resource_path.startswith(f'/{lang}/'):
+        # set the id url for non lang paths
+        resource_path = root_path + resource_path.rstrip('/')[len(f'/{lang}'):]
+    elif not resource_path.startswith(root_path):
+        # set the id url for lang paths
+        resource_path = f'{root_path}{resource_path}'
+    authority_name = str(f'{scheme}://{domain}')
+    if date_string:
+        tagging_entity = ','.join([authority_name, date_string])
+    atom_id = ':'.join(['tag', tagging_entity, resource_path])
+    return atom_id
+
+
+def datastore_insert_links(data_dict: dict[str, Any],
+                           limit: int, offset: int):
+    data_dict['_links'] = {}
+
+    # get the url from the request
+    try:
+        urlstring = request.environ['CKAN_CURRENT_URL']
+    except (KeyError, TypeError, RuntimeError):
+        return  # no links required for local actions
+
+    # change the offset in the url
+    parsed = list(urlparse(urlstring))
+    query = parsed[4]
+
+    arguments = dict(parse_qsl(query))
+    arguments_start = dict(arguments)
+    arguments_prev: dict[str, Any] = dict(arguments)
+    arguments_next: dict[str, Any] = dict(arguments)
+    if 'offset' in arguments_start:
+        arguments_start.pop('offset')
+    arguments_next['offset'] = int(offset) + int(limit)
+    arguments_prev['offset'] = int(offset) - int(limit)
+
+    parsed_start = parsed[:]
+    parsed_prev = parsed[:]
+    parsed_next = parsed[:]
+    parsed_start[4] = urlencode(arguments_start)
+    parsed_next[4] = urlencode(arguments_next)
+    parsed_prev[4] = urlencode(arguments_prev)
+
+    parsed_start = urlunparse(parsed_start)
+    parsed_next = urlunparse(parsed_next)
+    parsed_prev = urlunparse(parsed_prev)
+
+    _scheme, lang, _domain, root_path, keep_lang_paths = get_url_parts()
+    if not keep_lang_paths:
+        # set the api page links for non lang paths
+        if not parsed_start.startswith(f'/{lang}/'):
+            parsed_start = f'/{lang}{parsed_start}'
+        if not parsed_next.startswith(f'/{lang}/'):
+            parsed_next = f'/{lang}{parsed_next}'
+        if not parsed_prev.startswith(f'/{lang}/'):
+            parsed_prev = f'/{lang}{parsed_prev}'
+    else:
+        # set the api page links for lang paths
+        if not parsed_start.startswith(root_path):
+            parsed_start = f'{root_path}{parsed_start}'
+        if not parsed_next.startswith(root_path):
+            parsed_next = f'{root_path}{parsed_next}'
+        if not parsed_prev.startswith(root_path):
+            parsed_prev = f'{root_path}{parsed_prev}'
+
+    # add the links to the data dict
+    data_dict['_links']['start'] = parsed_start
+    data_dict['_links']['next'] = parsed_next
+    if int(offset) - int(limit) > 0:
+        data_dict['_links']['prev'] = parsed_prev

@@ -1,10 +1,11 @@
 from typing import Any, Callable, Dict
-from ckan.types import CKANApp, Validator
+from ckan.types import CKANApp, Validator, Optional
 from ckan.common import CKANConfig
 
 import ckan.plugins as plugins
 import ckan.lib.helpers as core_helpers
 import ckanext.datastore.backend.postgres as core_ds_psql
+import ckanext.dcat.utils as dcat_utils
 
 from ckanext.language_domains import patched, validators, logic
 from ckanext.language_domains.middleware import LanguageDomainMiddleware
@@ -20,6 +21,7 @@ class LanguageDomainsPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IValidators)
     plugins.implements(plugins.ITemplateHelpers)
     plugins.implements(plugins.IActions)
+    plugins.implements(plugins.IFeed, inherit=True)
 
     # IMiddleware
     def make_middleware(self, app: CKANApp, config: 'CKANConfig') -> CKANApp:
@@ -34,13 +36,18 @@ class LanguageDomainsPlugin(plugins.SingletonPlugin):
         core_helpers.get_site_protocol_and_host = patched.get_site_protocol_and_host
         core_helpers._local_url = patched.local_url
 
-        # TODO: do fancy shit...
-        config['ckan.feeds.authority_name'] = 'open-gov-canada'
-        config['ckan.feeds.author_name'] = 'open-gov-canada'
+        # NOTE: monkey patch these dcat methods to set the @id generations
+        dcat_utils.catalog_uri = patched.dcat_catalog_uri
 
-        # TODO: monkey patch ckanext.datastore.backend.postgres._insert_links
-        # core_views.set_ckan_current_url = helpers.set_ckan_current_url
-        # ckan.views.set_ckan_current_url = helpers.set_ckan_current_url
+        # NOTE: monkey patch these datastore methods to set the API paging URIs
+        core_ds_psql._insert_links = patched.datastore_insert_links
+
+    # IFeed
+    def create_atom_id(self, atom_id: str, resource_path: str,
+                       authority_name: Optional[str] = None,
+                       date_string: Optional[str] = None) -> str:
+        return patched.create_atom_id(
+            atom_id, resource_path, authority_name, date_string)
 
     # IValidators
     def get_validators(self) -> Dict[str, Validator]:
