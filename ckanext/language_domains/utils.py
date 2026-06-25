@@ -39,6 +39,7 @@ def get_url_parts(helper_locale: Optional[str] = None) -> Tuple[str, str, str, s
     """
     should_get_from_config = False
     # default vars
+    default_locale = config['ckan.locale_default']
     default_domain = config.get('ckan.site_url', '')
     uri_parts = urlsplit(default_domain)
     default_scheme = uri_parts.scheme
@@ -81,8 +82,8 @@ def get_url_parts(helper_locale: Optional[str] = None) -> Tuple[str, str, str, s
         # use default domain & language
         should_get_from_config = True
         if helper_locale == 'default':
-            correct_lang_code = config['ckan.locale_default']
-        correct_lang_code = helper_locale or config['ckan.locale_default']
+            correct_lang_code = default_locale
+        correct_lang_code = helper_locale or default_locale
         requesting_domain = default_domain
 
     if should_get_from_config:
@@ -105,6 +106,9 @@ def get_url_parts(helper_locale: Optional[str] = None) -> Tuple[str, str, str, s
                 # lang code is correct but domain isn't, set correct domain
                 correct_domain = lang_domains[domain_index_match]
                 break
+        # if correct_lang_code happens to be None, use default
+        if correct_lang_code is None:
+            correct_lang_code = default_locale
         # get configured root paths
         root_paths = config.get('ckanext.language_domains.root_paths')
         root_path = root_paths.get(correct_domain, '').rstrip('/')
