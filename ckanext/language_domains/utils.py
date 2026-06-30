@@ -127,4 +127,10 @@ def get_url_parts(helper_locale: Optional[str] = None) -> Tuple[str, str, str, s
         root_path = cached_root_path
         keep_lang_paths = cached_keep_lang_paths
 
+    # fallback to defaults in worst cases
+    if correct_domain is None:
+        correct_domain = default_domain
+    if correct_lang_code is None:
+        correct_lang_code = default_locale
+
     return (default_scheme, correct_lang_code, correct_domain, root_path, keep_lang_paths)
