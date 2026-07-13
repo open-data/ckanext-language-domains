@@ -183,7 +183,7 @@ def datastore_insert_links(data_dict: dict[str, Any],
     parsed_next = urlunparse(parsed_next)
     parsed_prev = urlunparse(parsed_prev)
 
-    _scheme, lang, _domain, root_path, keep_lang_paths = get_url_parts()
+    scheme, lang, domain, root_path, keep_lang_paths = get_url_parts()
     if not keep_lang_paths:
         # set the api page links for non lang paths
         if not parsed_start.startswith(f'/{lang}/'):
@@ -200,6 +200,34 @@ def datastore_insert_links(data_dict: dict[str, Any],
             parsed_next = f'{root_path}{parsed_next}'
         if not parsed_prev.startswith(root_path):
             parsed_prev = f'{root_path}{parsed_prev}'
+
+    parsed_start = urlparse(parsed_start)
+    parsed_start = urlunparse((
+        scheme,
+        domain,
+        parsed_start.path.rstrip('/'),
+        parsed_start.params,
+        parsed_start.query,
+        parsed_start.fragment
+    ))
+    parsed_next = urlparse(parsed_next)
+    parsed_next = urlunparse((
+        scheme,
+        domain,
+        parsed_next.path.rstrip('/'),
+        parsed_next.params,
+        parsed_next.query,
+        parsed_next.fragment
+    ))
+    parsed_prev = urlparse(parsed_prev)
+    parsed_prev = urlunparse((
+        scheme,
+        domain,
+        parsed_prev.path.rstrip('/'),
+        parsed_prev.params,
+        parsed_prev.query,
+        parsed_prev.fragment
+    ))
 
     # add the links to the data dict
     data_dict['_links']['start'] = parsed_start

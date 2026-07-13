@@ -44,10 +44,17 @@ def package_show(up_func: Action,
                 # relative uploaded resources.
                 res_url = r['url']
                 res_url_parts = urlparse(res_url)
+                res_path = res_url_parts.path.rstrip('/')
+                while res_path.startswith(root_path):
+                    # remove the root path
+                    res_path = res_path[len(root_path):]
+                while res_path.startswith(f'/{lang}/'):
+                    # remove the lang sub dir path
+                    res_path = res_path[len(f'/{lang}'):]
                 res_url = urlunparse((
                     scheme,
                     domain,
-                    root_path + res_url_parts.path.rstrip('/'),
+                    root_path + res_path,
                     res_url_parts.params,
                     res_url_parts.query,
                     res_url_parts.fragment
@@ -58,10 +65,17 @@ def package_show(up_func: Action,
                 # relative uploaded resources.
                 res_url = r['original_url']
                 res_url_parts = urlparse(res_url)
+                res_path = res_url_parts.path.rstrip('/')
+                while res_path.startswith(root_path):
+                    # remove the root path
+                    res_path = res_path[len(root_path):]
+                while res_path.startswith(f'/{lang}/'):
+                    # remove the lang sub dir path
+                    res_path = res_path[len(f'/{lang}'):]
                 res_url = urlunparse((
                     scheme,
                     domain,
-                    root_path + res_url_parts.path.rstrip('/'),
+                    root_path + res_path,
                     res_url_parts.params,
                     res_url_parts.query,
                     res_url_parts.fragment
@@ -69,17 +83,29 @@ def package_show(up_func: Action,
                 r['original_url'] = res_url
         else:
             # make sure all upload URLs are relative
-            # without any root paths
-            if r.get('url', '').startswith(root_path):
+            # without any root paths or domains.
+            res_url = r.get('url', '')
+            if res_url:
+                res_url_parts = urlparse(res_url)
+                res_url = urlunparse((
+                    '',
+                    '',
+                    root_path + res_url_parts.path.rstrip('/'),
+                    res_url_parts.params,
+                    res_url_parts.query,
+                    res_url_parts.fragment
+                ))
+                r['url'] = res_url
+            while r.get('url', '').startswith(root_path):
                 # remove the root path
                 r['url'] = r['url'][len(root_path):]
-            if r.get('url', '').startswith(f'/{lang}/'):
+            while r.get('url', '').startswith(f'/{lang}/'):
                 # remove the lang sub dir path
                 r['url'] = r['url'][len(f'/{lang}'):]
-            if r.get('original_url', '').startswith(root_path):
+            while r.get('original_url', '').startswith(root_path):
                 # remove the root path
                 r['original_url'] = r['original_url'][len(root_path):]
-            if r.get('original_url', '').startswith(f'/{lang}/'):
+            while r.get('original_url', '').startswith(f'/{lang}/'):
                 # remove the lang sub dir path
                 r['original_url'] = r['original_url'][len(f'/{lang}'):]
 
