@@ -63,24 +63,24 @@ def package_show(up_func: Action,
             if r.get('original_url', '').startswith('/'):
                 # prepend mapped domain and root path for XLoader url
                 # relative uploaded resources.
-                res_url = r['original_url']
-                res_url_parts = urlparse(res_url)
-                res_path = res_url_parts.path.rstrip('/')
-                while res_path.startswith(root_path):
+                original_url = r['original_url']
+                original_url_parts = urlparse(original_url)
+                original_url_path = original_url_parts.path.rstrip('/')
+                while original_url_path.startswith(root_path):
                     # remove the root path
-                    res_path = res_path[len(root_path):]
-                while res_path.startswith(f'/{lang}/'):
+                    original_url_path = original_url_path[len(root_path):]
+                while original_url_path.startswith(f'/{lang}/'):
                     # remove the lang sub dir path
-                    res_path = res_path[len(f'/{lang}'):]
-                res_url = urlunparse((
+                    original_url_path = original_url_path[len(f'/{lang}'):]
+                original_url = urlunparse((
                     scheme,
                     domain,
-                    root_path + res_path,
-                    res_url_parts.params,
-                    res_url_parts.query,
-                    res_url_parts.fragment
+                    root_path + original_url_path,
+                    original_url_parts.params,
+                    original_url_parts.query,
+                    original_url_parts.fragment
                 ))
-                r['original_url'] = res_url
+                r['original_url'] = original_url
         else:
             # make sure all upload URLs are relative
             # without any root paths or domains.
@@ -90,12 +90,24 @@ def package_show(up_func: Action,
                 res_url = urlunparse((
                     '',
                     '',
-                    root_path + res_url_parts.path.rstrip('/'),
+                    res_url_parts.path.rstrip('/'),
                     res_url_parts.params,
                     res_url_parts.query,
                     res_url_parts.fragment
                 ))
                 r['url'] = res_url
+            original_url = r.get('original_url', '')
+            if original_url:
+                original_url_parts = urlparse(original_url)
+                original_url = urlunparse((
+                    '',
+                    '',
+                    original_url_parts.path.rstrip('/'),
+                    original_url_parts.params,
+                    original_url_parts.query,
+                    original_url_parts.fragment
+                ))
+                r['original_url'] = original_url
             while r.get('url', '').startswith(root_path):
                 # remove the root path
                 r['url'] = r['url'][len(root_path):]
