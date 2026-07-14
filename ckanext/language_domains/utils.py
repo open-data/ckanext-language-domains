@@ -21,7 +21,8 @@ def get_domain_index(current_domain: str, language_domains: Dict[str, str]) -> i
     return 0
 
 
-def get_url_parts(helper_locale: Optional[str] = None) -> Tuple[str, str, str, str, bool]:
+def get_url_parts(helper_locale: Optional[str] = None) \
+        -> Tuple[str, str, str, str, bool]:
     """
     Returns a tuple of
         HTTP scheme,
@@ -133,4 +134,5 @@ def get_url_parts(helper_locale: Optional[str] = None) -> Tuple[str, str, str, s
     if correct_lang_code is None:
         correct_lang_code = default_locale
 
-    return (default_scheme, correct_lang_code, correct_domain, root_path, keep_lang_paths)
+    return (default_scheme, correct_lang_code, correct_domain,
+            root_path, keep_lang_paths)

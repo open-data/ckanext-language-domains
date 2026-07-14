@@ -16,7 +16,7 @@ class LanguageDomainMiddleware(object):
     """
 
     def __init__(self, app: Any, config: 'CKANConfig',
-                flask_app: Optional[Any] = None):
+                 flask_app: Optional[Any] = None):
         """
 
         """
@@ -102,7 +102,10 @@ class LanguageDomainMiddleware(object):
             # fallback to lang paths if no root path
             root_path = f'/{correct_lang_code}'
 
-        if not self.keep_lang_paths and current_uri.startswith(f'/{correct_lang_code}/'):
+        if (
+          not self.keep_lang_paths and
+          current_uri.startswith(f'/{correct_lang_code}/')
+        ):
             # set the Flask url for non lang paths
             environ['REQUEST_URI'] = current_uri = root_path + current_uri[
                 len(f'/{correct_lang_code}'):]
